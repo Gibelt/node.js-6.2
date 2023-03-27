@@ -1,55 +1,29 @@
-const http = require("http");
-const getUsers = require("./modules/users");
+const express = require("express");
+const dotenv = require("dotenv");
+const userRouter = require("./routes/users");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const loggerOne = require("./middlewares/loggerOne");
 
-const hostname = "127.0.0.1";
-const port = 3000;
+dotenv.config();
 
-const server = http.createServer((req, res) => {
-  const url = new URL(req.url, "http://127.0.0.1");
-  const name = url.searchParams.get("hello");
+const { API_URL, PORT, MONGO_URL } = process.env;
 
-  if (name) {
-    res.statusCode = 200;
-    res.statusMessage = "OK";
-    res.header = "Content-Type: text/plain";
-    const name = url.searchParams.get("hello");
-    res.write(`Hello, ${name}`);
-    res.end();
-    return;
-  }
+mongoose
+  .connect(MONGO_URL)
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => {
+    throw err;
+  });
 
-  if (name === "" || name === " ") {
-    res.statusCode = 400;
-    res.statusMessage = "bad request";
-    res.header = "Content-Type: text/plain";
-    res.write("Enter a name");
-    res.end();
-    return;
-  }
+const app = express();
 
-  if (url.searchParams.has("users")) {
-    res.statusCode = 200;
-    res.statusMessage = "OK";
-    res.header = "Content-Type: application/json";
-    res.write(getUsers());
-    res.end();
-    return;
-  }
+app.use(cors());
+app.use(loggerOne);
+app.use(bodyParser.json());
+app.use(userRouter);
 
-  if (![...url.searchParams].length) {
-    res.statusCode = 200;
-    res.statusMessage = "OK";
-    res.header = "Content-Type: text/plain";
-    res.write("Hello World\n");
-    res.end();
-    return;
-  }
-
-  res.statusCode = 500;
-  res.statusMessage = "Internal Server Error";
-  res.end();
-});
-
-server.listen(port, hostname, () => {
-  console.log(`Сервер запущен по адресу http://${hostname}:${port}/`);
+app.listen(PORT, () => {
+  console.log(`Ссылка на сервер - ${API_URL}:${PORT}`);
 });
